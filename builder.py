@@ -4,7 +4,7 @@ from groq import Groq
 import time
 import json
 import base64
-from PIL import Image  # Rasmni kichraytirish uchun
+from PIL import Image
 import io
 
 # Sahifa sozlamalari
@@ -72,7 +72,7 @@ if "show_download" not in st.session_state:
 # --- SIDEBAR ---
 with st.sidebar:
     st.title("⚡ AIGen.uz")
-    st.caption("AI Code Builder v2.2 (Error Fixed)")
+    st.caption("AI Code Builder v2.3 (Stable Version)")
     
     st.markdown('<div class="sidebar-chat">', unsafe_allow_html=True)
     user_prompt = st.text_area("Qanday kod yaratamiz?", placeholder="Masalan: Bino Go o'yinini yarat...", height=100)
@@ -86,28 +86,19 @@ with st.sidebar:
         if user_prompt:
             st.session_state.show_download = False 
             
-            image_context = ""
+            # TOKEN LIMITIDAN O'TMASLIK UCHUN RASMNI FAQAT TAVSIF SIFATIDA YUBORAMIZ
+            image_info = ""
             if uploaded_file:
-                try:
-                    # MUHIM: Rasmni kichraytirish (API xatosini oldini olish uchun)
-                    img = Image.open(uploaded_file)
-                    img.thumbnail((150, 150)) # Rasmni 150x150 o'lchamga keltiramiz
-                    
-                    buffered = io.BytesIO()
-                    img.save(buffered, format="PNG")
-                    base64_image = base64.b64encode(buffered.getvalue()).decode()
-                    
-                    image_context = f"\n\nMUHIM: Mana bu rasmning Base64 kodi: 'data:image/png;base64,{base64_image}'. " \
-                                    f"Ushbu kodni o'yin personaji (player) uchun src sifatida ishlating."
-                except Exception as e:
-                    st.error("Rasmni qayta ishlashda xato bo'ldi.")
+                image_info = f"\n\nESLATMA: Foydalanuvchi '{uploaded_file.name}' nomli personaj rasmini yukladi. " \
+                             f"O'yin qahramonini (player) ushbu rasmga mos ranglarda (masalan: jigarrang qalpoq, ko'k shim) " \
+                             f"Canvas orqali batafsil va chiroyli chizib ber. Link ishlatma, faqat kod bilan yarat."
 
-            with st.status("🛠 AI kod yozmoqda...", expanded=False):
+            with st.status("🛠 AI sarguzashtni rejalashtirmoqda...", expanded=False):
                 try:
                     completion = client.chat.completions.create(
                         messages=[
-                            {"role": "system", "content": "Siz professional o'yin muhandisisiz. Faqat HTML/JS/CSS kodini qaytaring. Ortiqcha gapirmang."},
-                            {"role": "user", "content": user_prompt + image_context}
+                            {"role": "system", "content": "Siz professional 2D o'yin muhandisisiz. Faqat bitta HTML fayl ichida JS/CSS/HTML kodini qaytaring. Ortiqcha gapirmang. Agar rasm haqida ma'lumot berilsa, uni Canvas orqali personaj sifatida chizib bering."},
+                            {"role": "user", "content": user_prompt + image_info}
                         ],
                         model="llama-3.3-70b-versatile",
                     )
@@ -115,23 +106,21 @@ with st.sidebar:
                     clean_code = raw_code.replace("```html", "").replace("```javascript", "").replace("```css", "").replace("```", "").strip()
                     st.session_state.generated_html = clean_code
                 except Exception as e:
-                    st.error(f"API Xatosi: {str(e)}. Iltimos, promptni qisqartiring.")
+                    st.error(f"Xatolik yuz berdi. Iltimos, promptni qisqartirib ko'ring.")
 
     st.markdown('</div>', unsafe_allow_html=True)
-
     st.markdown("---")
     
+    # Yuklab olish logikasi (o'zgarmadi)
     if st.session_state.generated_html:
         if not st.session_state.show_download:
             if st.button("📥 GET SOURCE CODE (AD)"):
                 js_code = f"window.open('{SMARTLINK_URL}', '_blank');"
                 components.html(f"<script>{js_code}</script>", height=0)
-                
                 placeholder = st.empty()
                 for seconds in range(15, 0, -1):
                     placeholder.markdown(f'<div class="timer-style">⚠️ REKLAMANI KO\'RING! {seconds}s...</div>', unsafe_allow_html=True)
                     time.sleep(1)
-                
                 placeholder.empty()
                 st.session_state.show_download = True
                 st.rerun() 
