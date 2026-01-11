@@ -3,7 +3,9 @@ import streamlit.components.v1 as components
 from groq import Groq
 import time
 import json
-import base64  # Rasmni kodga aylantirish uchun kerak
+import base64
+from PIL import Image  # Rasmni kichraytirish uchun
+import io
 
 # Sahifa sozlamalari
 st.set_page_config(page_title="AIGen.uz - AI Code Builder", layout="wide", initial_sidebar_state="expanded")
@@ -70,7 +72,7 @@ if "show_download" not in st.session_state:
 # --- SIDEBAR ---
 with st.sidebar:
     st.title("⚡ AIGen.uz")
-    st.caption("AI Code Builder v2.1 (Image Support)")
+    st.caption("AI Code Builder v2.2 (Error Fixed)")
     
     st.markdown('<div class="sidebar-chat">', unsafe_allow_html=True)
     user_prompt = st.text_area("Qanday kod yaratamiz?", placeholder="Masalan: Bino Go o'yinini yarat...", height=100)
@@ -86,25 +88,35 @@ with st.sidebar:
             
             image_context = ""
             if uploaded_file:
-                # Rasmni Base64 ga aylantirish
-                bytes_data = uploaded_file.getvalue()
-                base64_image = base64.b64encode(bytes_data).decode()
-                # AI uchun ko'rsatma: Rasmni kodga joylash
-                image_context = f"\n\nMUHIM: Mana bu rasmning Base64 kodi: 'data:image/png;base64,{base64_image}'. " \
-                                f"Ushbu kodni o'yin personaji (player) uchun src sifatida ishlating. " \
-                                f"Hech qanday tashqi link ishlatmang, faqat shu kodni o'yinga joylang."
+                try:
+                    # MUHIM: Rasmni kichraytirish (API xatosini oldini olish uchun)
+                    img = Image.open(uploaded_file)
+                    img.thumbnail((150, 150)) # Rasmni 150x150 o'lchamga keltiramiz
+                    
+                    buffered = io.BytesIO()
+                    img.save(buffered, format="PNG")
+                    base64_image = base64.b64encode(buffered.getvalue()).decode()
+                    
+                    image_context = f"\n\nMUHIM: Mana bu rasmning Base64 kodi: 'data:image/png;base64,{base64_image}'. " \
+                                    f"Ushbu kodni o'yin personaji (player) uchun src sifatida ishlating."
+                except Exception as e:
+                    st.error("Rasmni qayta ishlashda xato bo'ldi.")
 
-            with st.status("🛠 AI rasmni o'rganib kod yozmoqda...", expanded=False):
-                completion = client.chat.completions.create(
-                    messages=[
-                        {"role": "system", "content": "Siz professional o'yin muhandisisiz. Faqat bitta HTML fayl ichida JS/CSS/HTML kodini qaytaring. Agar rasm kodi berilgan bo'lsa, uni o'yinga to'liq integratsiya qiling."},
-                        {"role": "user", "content": user_prompt + image_context}
-                    ],
-                    model="llama-3.3-70b-versatile",
-                )
-                raw_code = completion.choices[0].message.content
-                clean_code = raw_code.replace("```html", "").replace("```javascript", "").replace("```css", "").replace("```", "").strip()
-                st.session_state.generated_html = clean_code
+            with st.status("🛠 AI kod yozmoqda...", expanded=False):
+                try:
+                    completion = client.chat.completions.create(
+                        messages=[
+                            {"role": "system", "content": "Siz professional o'yin muhandisisiz. Faqat HTML/JS/CSS kodini qaytaring. Ortiqcha gapirmang."},
+                            {"role": "user", "content": user_prompt + image_context}
+                        ],
+                        model="llama-3.3-70b-versatile",
+                    )
+                    raw_code = completion.choices[0].message.content
+                    clean_code = raw_code.replace("```html", "").replace("```javascript", "").replace("```css", "").replace("```", "").strip()
+                    st.session_state.generated_html = clean_code
+                except Exception as e:
+                    st.error(f"API Xatosi: {str(e)}. Iltimos, promptni qisqartiring.")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("---")
