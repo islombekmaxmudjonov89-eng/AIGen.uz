@@ -2,12 +2,22 @@ import streamlit as st
 import streamlit.components.v1 as components
 from groq import Groq
 import time
+import json # config.json ni o'qish uchun kerak
 
 # Sahifa sozlamalari
 st.set_page_config(page_title="AIGen.uz - AI Code Builder", layout="wide", initial_sidebar_state="expanded")
 
-# --- REKLAMA SOZLAMASI (SMARTLINK) ---
-SMARTLINK_URL = "https://rtouchingthewaterw.com/?cGnR=1236571"
+# --- ADMIN PANEL BILAN BOG'LASH ---
+def get_ad_link():
+    try:
+        with open('config.json', 'r') as f:
+            data = json.load(f)
+            return data.get("ad_link", "https://rtouchingthewaterw.com/?cGnR=1236571")
+    except:
+        # Agar faylda xato bo'lsa, zaxira link
+        return "https://rtouchingthewaterw.com/?cGnR=1236571"
+
+SMARTLINK_URL = get_ad_link()
 
 # API Kalit
 API_KEY = "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"
@@ -55,7 +65,7 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
-# Session state (Holatni saqlash)
+# Session state
 if "generated_html" not in st.session_state:
     st.session_state.generated_html = "<html><body style='background:#1a1a1a; display:flex; justify-content:center; align-items:center; height:100vh; color:#444;'><h1>AIGen.uz Preview Area</h1></body></html>"
 if "show_download" not in st.session_state:
@@ -71,7 +81,7 @@ with st.sidebar:
     
     if st.button("KODNI YARATISH ✨"):
         if user_prompt:
-            st.session_state.show_download = False # Yangi kodda yuklashni yashiramiz
+            st.session_state.show_download = False 
             with st.status("🛠 Kod yozilmoqda...", expanded=False):
                 completion = client.chat.completions.create(
                     messages=[
@@ -83,16 +93,15 @@ with st.sidebar:
                 st.session_state.generated_html = completion.choices[0].message.content.replace("```html", "").replace("```", "").strip()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- REKLAMA VA MAJBURIY KUTISH QISMI ---
     st.markdown("---")
     
     if not st.session_state.show_download:
         if st.button("📥 GET SOURCE CODE (AD)"):
-            # 1. Reklamani ochish
+            # Reklamani ochish
             js_code = f"window.open('{SMARTLINK_URL}', '_blank');"
             components.html(f"<script>{js_code}</script>", height=0)
             
-            # 2. 30 soniyali taymer
+            # 30 soniyali taymer
             placeholder = st.empty()
             progress_bar = st.progress(0)
             
@@ -104,9 +113,8 @@ with st.sidebar:
             placeholder.empty()
             progress_bar.empty()
             st.session_state.show_download = True
-            st.rerun() # Sahifani yangilab yuklash tugmasini chiqarish
+            st.rerun() 
     else:
-        # 30 soniya kutgandan keyin chiqadigan tugma
         st.success("✅ Rahmat! Kod tayyor.")
         st.download_button("📥 FAYLNI YUKLAB OLISH", st.session_state.generated_html, file_name="AIGen_Code.html", mime="text/html")
         if st.button("Qayta boshlash 🔄"):
