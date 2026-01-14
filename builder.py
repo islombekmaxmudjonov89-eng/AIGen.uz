@@ -3,9 +3,11 @@ import streamlit.components.v1 as components
 from groq import Groq
 import time
 import json
+import zipfile
+import io
 
-# Sahifa sozlamalari (Global title)
-st.set_page_config(page_title="AIGen.io - Ultimate AI Code Builder", layout="wide", initial_sidebar_state="expanded")
+# Sahifa sozlamalari
+st.set_page_config(page_title="AIGen.io - Full-Stack AI Builder", layout="wide", initial_sidebar_state="expanded")
 
 # --- ADMIN PANEL BILAN BOG'LASH ---
 def get_ad_link():
@@ -18,116 +20,102 @@ def get_ad_link():
 
 SMARTLINK_URL = get_ad_link()
 
-# API Kalit (Ehtiyot bo'l, buni env qilsang yaxshi bo'lardi)
+# API Kalit (Groq)
 API_KEY = "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"
 client = Groq(api_key=API_KEY)
 
-# --- CSS DIZAYN (Professional Dark Mode) ---
+# --- CSS DIZAYN ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0d1117; color: white; }}
-    code {{ color: #58a6ff !important; }}
-    pre {{ background-color: #161b22 !important; border: 1px solid #30363d; border-radius: 8px; }}
-    
-    .sidebar-chat {{
-        border: 1px solid #30363d;
-        border-radius: 12px;
-        padding: 15px;
-        background-color: #161b22;
-        margin-bottom: 10px;
-    }}
-    div.stButton > button {{
-        background-color: #238636 !important;
-        color: white !important;
-        font-weight: 700 !important;
-        width: 100% !important;
-        border: none !important;
-        transition: 0.3s;
-    }}
-    div.stButton > button:hover {{
-        background-color: #2ea043 !important;
-    }}
-    .timer-style {{
-        color: #ff7b72;
-        font-weight: bold;
-        text-align: center;
-        padding: 10px;
-        border: 1px solid #f85149;
-        border-radius: 10px;
-        background: rgba(248, 81, 73, 0.1);
-    }}
+    .sidebar-chat {{ border: 1px solid #30363d; border-radius: 12px; padding: 15px; background-color: #161b22; margin-bottom: 10px; }}
+    div.stButton > button {{ background-color: #238636 !important; color: white !important; font-weight: 700 !important; width: 100% !important; }}
+    .timer-style {{ color: #ff7b72; font-weight: bold; text-align: center; padding: 10px; border: 1px solid #f85149; border-radius: 10px; background: rgba(248, 81, 73, 0.1); }}
     </style>
     """, unsafe_allow_html=True)
 
-# Session state
-if "generated_html" not in st.session_state:
-    st.session_state.generated_html = ""
-if "show_download" not in st.session_state:
-    st.session_state.show_download = False
+# Session state initialization
+if "generated_html" not in st.session_state: st.session_state.generated_html = ""
+if "generated_py" not in st.session_state: st.session_state.generated_py = ""
+if "show_download" not in st.session_state: st.session_state.show_download = False
 
-# --- SIDEBAR (Inglizcha matnlar) ---
+# ZIP yaratish funksiyasi
+def create_zip(html, python):
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("index.html", html)
+        z.writestr("main.py", python)
+        z.writestr("requirements.txt", "flask\nflask-cors\nrequests")
+    return buf.getvalue()
+
+# --- SIDEBAR ---
 with st.sidebar:
-    st.title("🚀 AIGen.io")
-    st.caption("AI Code Builder v3.0 (Global Edition)")
+    st.title("🚀 AIGen.io PRO")
+    st.caption("Full-Stack Builder (Frontend + Backend)")
     
     st.markdown('<div class="sidebar-chat">', unsafe_allow_html=True)
-    user_prompt = st.text_area("Describe your app or game:", placeholder="Example: A retro snake game with neon graphics...", height=150)
+    user_prompt = st.text_area("What app should I build?", placeholder="Example: E-commerce with inventory management...", height=150)
     
-    if st.button("GENERATE CODE ✨"):
+    if st.button("GENERATE FULL-STACK ✨"):
         if user_prompt:
             st.session_state.show_download = False 
-            
-            with st.status("🛠 AI is writing code...", expanded=False):
-                try:
-                    completion = client.chat.completions.create(
-                        messages=[
-                            {"role": "system", "content": "You are a professional Full-stack developer. Return only one single HTML file containing all JS/CSS/HTML code. No explanations."},
-                            {"role": "user", "content": user_prompt}
-                        ],
-                        model="llama-3.3-70b-versatile",
-                    )
-                    raw_code = completion.choices[0].message.content
-                    clean_code = raw_code.replace("```html", "").replace("```javascript", "").replace("```css", "").replace("```", "").strip()
-                    st.session_state.generated_html = clean_code
-                except Exception as e:
-                    st.error(f"Error: API limit reached. Try again in a minute.")
-    st.markdown('</div>', unsafe_allow_html=True)
+            with st.status("🛠 AI is architecting your App...", expanded=True):
+                # PROMPTNI KUCHAYTIRDIK
+                system_msg = """You are a Senior Full-stack Developer. 
+                Generate a professional web app. 
+                1. Use Tailwind CSS for Frontend.
+                2. Use Flask for Backend main.py.
+                Separate them clearly with: ===BACKEND_START==="""
+                
+                completion = client.chat.completions.create(
+                    messages=[
+                        {"role": "system", "content": system_msg},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    model="llama-3.3-70b-versatile",
+                )
+                raw_res = completion.choices[0].message.content
+                
+                # Kodlarni ajratish
+                if "===BACKEND_START===" in raw_res:
+                    parts = raw_res.split("===BACKEND_START===")
+                    st.session_state.generated_html = parts[0].replace("```html", "").replace("```", "").strip()
+                    st.session_state.generated_py = parts[1].replace("```python", "").replace("```", "").strip()
+                else:
+                    st.session_state.generated_html = raw_res
+                    st.session_state.generated_py = "# No backend generated for this simple task."
 
+    st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("---")
     
+    # Yuklab olish logikasi (Timer va Reklama bilan)
     if st.session_state.generated_html:
         if not st.session_state.show_download:
-            if st.button("📥 GET SOURCE CODE (FREE)"):
-                # Reklama ochish
+            if st.button("📥 UNLOCK FULL PROJECT ZIP"):
                 js_code = f"window.open('{SMARTLINK_URL}', '_blank');"
                 components.html(f"<script>{js_code}</script>", height=0)
                 
                 placeholder = st.empty()
-                for seconds in range(15, 0, -1):
-                    placeholder.markdown(f'<div class="timer-style">⚠️ Unlock Code in {seconds}s... (Keep Ad tab open)</div>', unsafe_allow_html=True)
+                for s in range(15, 0, -1):
+                    placeholder.markdown(f'<div class="timer-style">⚠️ Packaging files... {s}s</div>', unsafe_allow_html=True)
                     time.sleep(1)
                 
                 placeholder.empty()
                 st.session_state.show_download = True
                 st.rerun() 
         else:
-            st.success("✅ Code Unlocked!")
-            st.download_button("📥 DOWNLOAD FILE", st.session_state.generated_html, file_name="AIGen_Code.html", mime="text/html")
-            if st.button("Reset 🔄"):
-                st.session_state.generated_html = ""
-                st.session_state.show_download = False
-                st.rerun()
+            zip_file = create_zip(st.session_state.generated_html, st.session_state.generated_py)
+            st.success("✅ Full Project Ready!")
+            st.download_button("📥 DOWNLOAD .ZIP PACK", zip_file, file_name="AIGen_Project.zip", mime="application/zip")
 
 # --- ASOSIY OYNA ---
 if st.session_state.generated_html:
-    col1, col2 = st.tabs(["👁 PREVIEW", "📜 SOURCE CODE"])
-    with col1:
-        st.info("Live Preview:")
+    t1, t2, t3 = st.tabs(["👁 PREVIEW", "🌐 HTML/JS", "🐍 PYTHON BACKEND"])
+    with t1:
         components.html(st.session_state.generated_html, height=600, scrolling=True)
-    with col2:
-        st.info("Full Source Code:")
+    with t2:
         st.code(st.session_state.generated_html, language='html')
+    with t3:
+        st.code(st.session_state.generated_py, language='python')
 else:
-    st.markdown("<h2 style='text-align: center; color: #8b949e; margin-top: 100px;'>Type your idea and click 'Generate Code' to start!</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #484f58;'>Example: 'A landing page for a coffee shop' or 'A simple calculator app'</p>", unsafe_allow_html=True)
-
+    st.markdown("<h1 style='text-align: center; margin-top: 150px;'>Build your next $1B Startup in seconds.</h1>", unsafe_allow_html=True)
