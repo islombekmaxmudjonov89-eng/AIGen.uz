@@ -7,7 +7,7 @@ import zipfile
 import io
 
 # 1. Sahifa sozlamalari
-st.set_page_config(page_title="AIGen.io - Professional Full-Stack AI", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="AIGen.uz - Professional Full-Stack AI", layout="wide", initial_sidebar_state="expanded")
 
 # --- ADMIN PANEL (REKLAMA) ---
 def get_ad_link():
@@ -54,7 +54,7 @@ def create_project_zip(html, python):
 
 # --- SIDEBAR (Boshqaruv Paneli) ---
 with st.sidebar:
-    st.title("🚀 AIGen.io PRO")
+    st.title("🚀 AIGen.uz PRO")
     st.caption("Full-Stack Engine v4.0")
     
     st.markdown('<div class="sidebar-chat">', unsafe_allow_html=True)
@@ -140,3 +140,4 @@ else:
     st.markdown("<h1 style='text-align: center; margin-top: 100px; color: #58a6ff;'>AIGen.io PRO</h1>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center; color: #8b949e;'>Build fully functional Apps with Python Backends in seconds.</h3>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #484f58;'>Example: 'A bank app where I can send money and see my balance'</p>", unsafe_allow_html=True)
+
