@@ -19,7 +19,7 @@ def get_ad_link():
 SMARTLINK_URL = get_ad_link()
 
 # API Kalit (Ehtiyot bo'l, buni env qilsang yaxshi bo'lardi)
-API_KEY = "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"
+API_KEY = "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"
 client = Groq(api_key=API_KEY)
 
 # --- CSS DIZAYN (Professional Dark Mode) ---
@@ -130,3 +130,4 @@ if st.session_state.generated_html:
 else:
     st.markdown("<h2 style='text-align: center; color: #8b949e; margin-top: 100px;'>Type your idea and click 'Generate Code' to start!</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #484f58;'>Example: 'A landing page for a coffee shop' or 'A simple calculator app'</p>", unsafe_allow_html=True)
+
