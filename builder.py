@@ -21,7 +21,7 @@ def get_ad_link():
 SMARTLINK_URL = get_ad_link()
 
 # --- API SOZLAMALARI ---
-API_KEY = "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"
+API_KEY = "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"
 client = Groq(api_key=API_KEY)
 
 # --- CSS DIZAYN (Premium Dark Mode) ---
@@ -140,5 +140,6 @@ else:
     st.markdown("<h1 style='text-align: center; margin-top: 100px; color: #58a6ff;'>AIGen.io PRO</h1>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center; color: #8b949e;'>Build fully functional Apps with Python Backends in seconds.</h3>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #484f58;'>Example: 'A bank app where I can send money and see my balance'</p>", unsafe_allow_html=True)
+
 
 
